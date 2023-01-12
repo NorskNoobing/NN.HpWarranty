@@ -1,4 +1,4 @@
-function Invoke-HpwRequest {
+function New-HpwJob {
     [CmdletBinding()]
     param (
         [Parameter(Mandatory,ValueFromPipeline,Position=0)]$sn,
