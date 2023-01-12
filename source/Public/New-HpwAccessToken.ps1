@@ -1,9 +1,9 @@
 function New-HpwAccessToken {
     [CmdletBinding()]
     param (
-        $clientIdPath = "$env:USERPROFILE\.creds\HP\hpWarrantyClientId.xml",
-        $clientSecretPath = "$env:USERPROFILE\.creds\HP\hpWarrantyClientSecret.xml",
-        $accessTokenPath = "$env:USERPROFILE\.creds\HP\hpWarrantyAccessToken.xml"
+        [string]$credsPath = "$env:USERPROFILE\.creds\HP\hpWarrantyCreds.xml",
+        [string]$accessTokenPath = "$env:USERPROFILE\.creds\HP\hpWarrantyAccessToken.xml",
+        [switch]$RefreshCreds
     )
     
     process {
@@ -13,19 +13,23 @@ function New-HpwAccessToken {
             $null = New-Item -ItemType Directory $accessTokenDir
         }
 
-        #Create clientId file
-        if (!(Test-Path $clientIdPath)) {
-            Read-Host "Enter HP client_id" -AsSecureString | Export-Clixml $clientIdPath
+        #Create creds file
+        if (!(Test-Path $credsPath) -or $RefreshCreds) {
+            while (!$clientId) {
+                $clientId = Read-Host "Enter HP client_id"
+            }
+            while (!$clientSecret) {
+                $clientSecret = Read-Host "Enter HP client_secret"
+            }
+            
+            @{
+                "client_id" = $clientId
+                "client_secret" = $clientSecret
+            } | ConvertTo-Json | ConvertTo-SecureString -AsPlainText | Export-Clixml $credsPath
         }
 
-        #Create clientSecret file
-        if (!(Test-Path $clientSecretPath)) {
-            Read-Host "Enter HP client_secret" -AsSecureString | Export-Clixml $clientSecretPath
-        }
-
-        $clientId = Import-Clixml $clientIdPath | ConvertFrom-SecureString -AsPlainText
-        $clientSecret = Import-Clixml $clientSecretPath | ConvertFrom-SecureString -AsPlainText
-        $b64EncodedCred  = [System.Convert]::ToBase64String([System.Text.Encoding]::ASCII.GetBytes("$($clientId):$($clientSecret)"))
+        $creds = Import-Clixml $credsPath | ConvertFrom-SecureString -AsPlainText | ConvertFrom-Json
+        $b64EncodedCred  = [System.Convert]::ToBase64String([System.Text.Encoding]::ASCII.GetBytes("$($creds.client_id):$($creds.client_secret)"))
 
         $splat = @{
             "Method" = "POST"
