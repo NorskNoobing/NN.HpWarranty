@@ -11,24 +11,19 @@ function New-HpwJob {
     }
 
     process {
-        if ($pn) {
-            $CurrentQueryBody = $CurrentQueryBody + @{
-                "pn" = $pn
-            }
-        }
-        if ($cc) {
-            $CurrentQueryBody = $CurrentQueryBody + @{
-                "cc" = $cc
-            }
-        }
-
-        $null = $queryBody.Add(
-            $CurrentQueryBody + @{
-                "sn" = $sn
-            }
-        )
-
         $CurrentQueryBody = $null
+
+        #Build request Uri
+        $PSBoundParameters.Keys.ForEach({
+            [string]$Key = $_
+            [string]$Value = $PSBoundParameters.$key
+        
+            $CurrentQueryBody = $CurrentQueryBody + @{
+                "$Key" = "$Value"
+            }
+        })
+
+        $null = $queryBody.Add($CurrentQueryBody)
     }
 
     end {
@@ -40,7 +35,7 @@ function New-HpwJob {
                 "Content-Type" = "application/json"
                 "Authorization" = "Bearer $(Get-HpwAccessToken)"
             }
-            "Body" = $queryBody | ConvertTo-Json
+            "Body" = ConvertTo-Json @($queryBody)
         }
         Invoke-RestMethod @splat
     }
